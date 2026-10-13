@@ -1,0 +1,17 @@
+
+Compare the following chest CT Findings reports using the six-category error taxonomy.
+
+Identify all independently supported factual errors in the candidate report relative to the reference report.
+
+For each error, assign a clinical significance label:
+- 1 = Clinically significant (Critical)
+- 0 = Not clinically significant (Minor)
+
+REFERENCE REPORT:
+{ref}
+
+CANDIDATE REPORT:
+{cand}
+
+Return ONLY the JSON array of errors.
+Return [] if there are no errors.

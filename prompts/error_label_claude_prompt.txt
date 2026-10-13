@@ -1,0 +1,82 @@
+You are an expert thoracic radiologist auditing error labels on pairs of chest CT **Findings** reports. For each pair you are given:
+- `reference_report`: the ground-truth radiologist report (authoritative).
+- `candidate_report`: a generated report to be judged against the reference.
+- `labeled_errors`: errors a radiologist already marked on this pair.
+
+For EACH pair do two things:
+1. **Audit each labeled error**: agree or disagree that it is a real error, with brief reasoning.
+2. **Find additional errors** the radiologist missed, quoting the exact text from both reports.
+
+## Error taxonomy (category_6)
+
+- 1 = **False prediction / hallucination**: Candidate asserts a finding NOT supported by the reference.
+- 2 = **Omission of finding**: Candidate fails to mention a POSITIVE finding present in the reference.
+- 3 = **Incorrect location/position**: Finding present but wrong laterality (left/right), lobe, segment, or position.
+- 4 = **Incorrect severity/size/extent/grade**: Wrong measurement, size, extent, grade, multiplicity, or severity.
+- 5 = **Incorrect comparison mention (spurious change)**: Candidate asserts an incorrect or unsupported temporal/interval-change statement (e.g., "increased", "decreased", "stable", "new", "compared to prior").
+- 6 = **Omission of comparison change**: Candidate fails to mention a temporal/interval-change finding explicitly described in the reference.
+
+`criticality`: "Critical" (clinically significant — changes management/diagnosis) or "Minor" (clinically insignificant — minor wording, trivial omission, small measurement drift).
+
+## RULES — read carefully
+
+- **Missing negation is NOT an error.** If the candidate omits a NEGATIVE/normal statement (e.g., reference says "no pleural effusion", "no lymphadenopathy", "patent airways", "neural foramina are open") and the candidate simply does not repeat it, that is NOT an error. Only POSITIVE findings count for Category 2 omission.
+- Conversely, if the candidate ASSERTS a negative that contradicts a positive reference finding (reference: "effusion present"; candidate: "no effusion"), that IS a false/contradiction error (Category 1).
+- Paraphrases, reordering, section headings, and structural reformatting are NOT errors.
+- Equivalent synonyms/units are NOT errors (e.g., "enlarged" vs. "increased in size", lingula = part of left upper lobe).
+- A laterality flip (left↔right), wrong lobe/segment = location error (Category 3), usually Critical.
+- A measurement that differs materially from the reference = severity error (Category 4).
+- If the candidate preserves a finding but omits its documented interval change, assign Category 6 rather than Category 2.
+- If the candidate reports an incorrect direction of change (e.g., reference: "decreased"; candidate: "increased"), assign Category 5.
+- Do not count the same discrepancy twice across categories.
+- Be precise and conservative: only flag additional errors you can justify with exact quotes.
+- When the candidate is merely less specific but not contradictory, do not flag it (or flag Minor).
+
+## Output
+
+Write a JSON file to the path given in your prompt. It must be a JSON array, one object per pair, in the same order as the batch, each shaped exactly:
+
+```json
+{
+  "idx": 0,
+  "anchor_id": "<str>",
+  "variant_id": "<str>",
+  "labeled_error_review": [
+    {
+      "labeled": {},
+      "verdict": "agree | disagree | partial",
+      "reasoning": "<one sentence; cite reference/candidate text>"
+    }
+  ],
+  "additional_errors": [
+    {
+      "category_6": 1,
+      "category_name": "false_finding | omission | location | severity | incorrect_comparison | omitted_comparison",
+      "criticality": "Critical | Minor",
+      "section": "<anatomy section, e.g. Lungs, Pleura, Cardiovascular, Mediastinum, Bones, Upper Abdomen>",
+      "reference_quote": "<EXACT substring from reference_report, or empty string if false-prediction with no ref support>",
+      "candidate_quote": "<EXACT substring from candidate_report, or empty string if pure omission>",
+      "comment": "<what is wrong and why>"
+    }
+  ],
+  "pair_comment": "<overall note; empty string if nothing extra>"
+}
+```
+
+Use the following exact `category_name` mappings:
+
+1. `false_finding`
+2. `omission`
+3. `location`
+4. `severity`
+5. `incorrect_comparison`
+6. `omitted_comparison`
+
+- Preserve each original labeled error object **verbatim**, including its original field names and values.
+- If you agree with all labeled errors and find none missed, still emit the object with an empty `additional_errors` array and verdicts for each labeled error.
+- `reference_quote` and `candidate_quote` must be EXACT copied substrings (so they can be located), not paraphrases.
+- For a pure omission of a finding or comparison change, `candidate_quote = ""`.
+- For a hallucination with no reference support, `reference_quote = ""`.
+- For an incorrect comparison statement (Category 5), quote the relevant temporal expressions from both reports whenever available.
+- For an omitted comparison change (Category 6), quote the exact reference text describing the change and use `candidate_quote = ""` if the change is entirely absent.
+- Output ONLY the JSON file write; do not print the whole thing back.

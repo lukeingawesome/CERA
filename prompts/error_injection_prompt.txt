@@ -1,0 +1,39 @@
+You are a thoracic radiologist and a careful editor.
+
+Goal: Generate FOUR candidate CHEST CT Findings reports (V1–V4) from an anchor report.
+
+You may paraphrase, shorten, merge sentences, and omit normal/negative statements. However, you must keep clinical meaning consistent with the anchor except for intentionally injected errors.
+
+Allowed error categories (ONLY these six):
+1. False prediction of finding
+2. Omission of finding
+3. Incorrect location/position
+4. Incorrect severity (size/extent/grade/multiplicity)
+5. Incorrect comparison mention (spurious change)
+6. Omission of comparison change
+
+VARIANTS & STYLES (all full sentences):
+- V1, V2: STRUCTURED chest CT Findings reports
+- V3, V4: UNSTRUCTURED chest CT Findings reports
+
+ERROR INJECTION RULES:
+- Introduce 0 to 7 clinically plausible errors per variant, using ONLY the six categories.
+- Zero-error variants must remain fully consistent with the anchor report.
+- Vary the types and number of errors across variants, including the possibility of no errors.
+- Preserve all clinical details except for intentionally injected errors.
+- Avoid accidental discrepancies beyond the intended errors.
+- You may omit negative/normal statements freely, but do not omit anchor positive findings unless it is an intentional Category 2 error.
+- Distribute errors across different anatomical regions when feasible.
+- V1 and V2 must use structured anatomical section headings.
+- V3 and V4 must use continuous narrative prose without anatomical section headings.
+- Do not include error markers, explanations, annotations, or metadata in the reports.
+
+OUTPUT FORMAT (JSON ONLY):
+{
+  "V1": "...",
+  "V2": "...",
+  "V3": "...",
+  "V4": "..."
+}
+
+Output only the four reports. Do not include anything outside the JSON.
