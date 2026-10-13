@@ -30,7 +30,7 @@ torchrun --nproc_per_node=4 train.py --data data/sft --out runs/cera-4b
 ```
 
 Loss is masked to completion tokens. Put benchmark anchor ids in
-`data/gold_anchors.txt` to exclude them from checkpoint selection.
+`<data>/gold_anchors.txt` to exclude them from checkpoint selection.
 
 Defaults reproduce the released adapter: LoRA r=32, alpha=64, lr 1e-4 cosine,
 2 epochs, effective batch 96 (4 GPUs x 4 x 6 accumulation), max_len 2048.

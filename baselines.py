@@ -89,6 +89,9 @@ def main():
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     pairs = pd.read_parquet(a.pairs)
+    missing = {"anchor_id", "variant_id", "reference_report", "candidate_report"} - set(pairs.columns)
+    if missing:
+        raise SystemExit(f"{a.pairs} is missing columns: {sorted(missing)}")
     if a.limit:
         pairs = pairs.head(a.limit)
     if a.n_shards > 1:

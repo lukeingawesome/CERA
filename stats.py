@@ -6,14 +6,13 @@ comes from a normal approximation on the bootstrap distribution, because the
 empirical tail is censored at 1/(B+1).
 """
 import argparse
-from itertools import combinations
 
 import numpy as np
 import pandas as pd
 from scipy.stats import kendalltau, norm, spearmanr, wilcoxon
 from sklearn.metrics import roc_auc_score
 
-B = 4000
+N_BOOT = 4000
 
 
 def _blocks(anchors):
@@ -22,7 +21,7 @@ def _blocks(anchors):
     return uniq, idx
 
 
-def tau(df, pred, gold, anchor="anchor_id", n_boot=B, seed=0):
+def tau(df, pred, gold, anchor="anchor_id", n_boot=N_BOOT, seed=0):
     """tau-b with an anchor-blocked bootstrap CI."""
     d = df[[pred, gold, anchor]].dropna()
     point = kendalltau(d[gold], d[pred]).statistic
@@ -39,7 +38,7 @@ def tau(df, pred, gold, anchor="anchor_id", n_boot=B, seed=0):
     return point, lo, hi
 
 
-def paired(df, a_col, b_col, gold, anchor="anchor_id", n_boot=B, seed=0):
+def paired(df, a_col, b_col, gold, anchor="anchor_id", n_boot=N_BOOT, seed=0):
     """tau(a) - tau(b) against the same gold, anchor-blocked."""
     d = df[[a_col, b_col, gold, anchor]].dropna()
     uniq, idx = _blocks(d[anchor])
@@ -101,6 +100,8 @@ def format_stability(df, pred, gold, style="reference_style", key=("anchor_id", 
     """Does the score survive re-rendering the reference?"""
     w = df.pivot_table(index=list(key), columns=style, values=pred).dropna()
     styles = list(w.columns)
+    if len(styles) != 2:
+        raise ValueError(f"expected 2 reference styles, found {styles}")
     taus = {s: kendalltau(df[df[style] == s][gold], df[df[style] == s][pred]).statistic
             for s in styles}
     a, b = w[styles[0]], w[styles[1]]

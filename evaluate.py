@@ -43,6 +43,14 @@ def main():
     p.add_argument("--limit", type=int, default=None)
     a = p.parse_args()
 
+    d = pd.read_parquet(a.pairs)
+    need = {"anchor_id", "variant_id", "reference_report", "candidate_report"}
+    missing = need - set(d.columns)
+    if missing:
+        raise SystemExit(f"{a.pairs} is missing columns: {sorted(missing)}")
+    if a.limit:
+        d = d.head(a.limit)
+
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     tok = AutoTokenizer.from_pretrained(a.adapter)
@@ -53,10 +61,6 @@ def main():
     model = AutoModelForCausalLM.from_pretrained(a.base, dtype=torch.bfloat16, device_map="cuda")
     model = PeftModel.from_pretrained(model, a.adapter)
     model = model.merge_and_unload().eval()
-
-    d = pd.read_parquet(a.pairs)
-    if a.limit:
-        d = d.head(a.limit)
 
     rows, errs, raw = [], [], []
     for i in range(0, len(d), a.batch_size):

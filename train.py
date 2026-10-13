@@ -17,12 +17,11 @@ LORA_TARGETS = ["in_proj_qkv", "in_proj_z", "in_proj_b", "in_proj_a", "out_proj"
                 "gate_proj", "up_proj", "down_proj"]
 
 
-def held_out(path):
+def held_out(eval_path, gold_path):
     """Anchors in the eval split, minus any that appear in the benchmark gold."""
-    anchors = {json.loads(l)["anchor_id"] for l in open(path)}
-    gold = Path("data/gold_anchors.txt")
-    if gold.exists():
-        excluded = {l.strip() for l in open(gold) if l.strip()}
+    anchors = {json.loads(l)["anchor_id"] for l in open(eval_path)}
+    if gold_path.exists():
+        excluded = {l.strip() for l in open(gold_path) if l.strip()}
         return anchors - excluded, anchors & excluded
     return anchors, set()
 
@@ -48,7 +47,7 @@ def main():
     if tok.pad_token_id is None:
         tok.pad_token = tok.eos_token
 
-    dev, excluded = held_out(data / "sft_dev.jsonl")
+    dev, excluded = held_out(data / "sft_dev.jsonl", data / "gold_anchors.txt")
     print(f"dev anchors {len(dev)} | gold anchors excluded from selection {len(excluded)}")
 
     train_ds = PairSFT(data / "sft_train.jsonl", tok, a.max_len)

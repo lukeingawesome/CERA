@@ -10,7 +10,6 @@ margin, and paired superiority of one metric over the rest with Holm correction.
 import argparse
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from scipy.stats import kendalltau
 
@@ -37,10 +36,12 @@ def load_predictions(pred_dir, cera_scores=None):
     return pd.concat(frames, ignore_index=True).drop_duplicates(KEY + ["method"])
 
 
-def orient(wide, method, gold):
+def orient(df, method, gold):
     """Flip similarity metrics so higher always means more errors."""
-    r = kendalltau(wide[gold], wide[method]).statistic
-    return wide[method] * (1.0 if (r is not None and r >= 0) else -1.0)
+    d = df[[method, gold]].dropna()
+    r = kendalltau(d[gold], d[method]).statistic
+    sign = 1.0 if (r is not None and r >= 0) else -1.0
+    return df[method] * sign
 
 
 def main():
@@ -68,7 +69,7 @@ def main():
     print(f"{len(d)} pairs | {len(methods)} methods")
 
     for m in methods:
-        d[m] = orient(d.dropna(subset=[m]), m, GOLD_COLS["total"]).reindex(d.index)
+        d[m] = orient(d, m, GOLD_COLS["total"])
 
     rows = []
     for m in methods:
