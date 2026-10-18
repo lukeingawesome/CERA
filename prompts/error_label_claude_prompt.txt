@@ -1,11 +1,8 @@
-You are an expert thoracic radiologist auditing error labels on pairs of chest CT **Findings** reports. For each pair you are given:
+You are an expert thoracic radiologist labeling errors on pairs of chest CT **Findings** reports. For each pair you are given:
 - `reference_report`: the ground-truth radiologist report (authoritative).
 - `candidate_report`: a generated report to be judged against the reference.
-- `labeled_errors`: errors a radiologist already marked on this pair.
 
-For EACH pair do two things:
-1. **Audit each labeled error**: agree or disagree that it is a real error, with brief reasoning.
-2. **Find additional errors** the radiologist missed, quoting the exact text from both reports.
+For EACH pair, identify every discrepancy in the candidate relative to the reference, quoting the exact text from both reports.
 
 ## Error taxonomy (category_6)
 
@@ -29,26 +26,18 @@ For EACH pair do two things:
 - If the candidate preserves a finding but omits its documented interval change, assign Category 6 rather than Category 2.
 - If the candidate reports an incorrect direction of change (e.g., reference: "decreased"; candidate: "increased"), assign Category 5.
 - Do not count the same discrepancy twice across categories.
-- Be precise and conservative: only flag additional errors you can justify with exact quotes.
+- Be precise and conservative: only flag errors you can justify with exact quotes.
 - When the candidate is merely less specific but not contradictory, do not flag it (or flag Minor).
 
 ## Output
 
 Write a JSON file to the path given in your prompt. It must be a JSON array, one object per pair, in the same order as the batch, each shaped exactly:
 
-```json
 {
   "idx": 0,
   "anchor_id": "<str>",
   "variant_id": "<str>",
-  "labeled_error_review": [
-    {
-      "labeled": {},
-      "verdict": "agree | disagree | partial",
-      "reasoning": "<one sentence; cite reference/candidate text>"
-    }
-  ],
-  "additional_errors": [
+  "errors": [
     {
       "category_6": 1,
       "category_name": "false_finding | omission | location | severity | incorrect_comparison | omitted_comparison",
@@ -59,9 +48,8 @@ Write a JSON file to the path given in your prompt. It must be a JSON array, one
       "comment": "<what is wrong and why>"
     }
   ],
-  "pair_comment": "<overall note; empty string if nothing extra>"
+  "pair_comment": "<overall note; empty string if nothing to add>"
 }
-```
 
 Use the following exact `category_name` mappings:
 
@@ -72,8 +60,7 @@ Use the following exact `category_name` mappings:
 5. `incorrect_comparison`
 6. `omitted_comparison`
 
-- Preserve each original labeled error object **verbatim**, including its original field names and values.
-- If you agree with all labeled errors and find none missed, still emit the object with an empty `additional_errors` array and verdicts for each labeled error.
+- If a pair has no errors, still emit the object with an empty `errors` array.
 - `reference_quote` and `candidate_quote` must be EXACT copied substrings (so they can be located), not paraphrases.
 - For a pure omission of a finding or comparison change, `candidate_quote = ""`.
 - For a hallucination with no reference support, `reference_quote = ""`.
